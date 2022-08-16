@@ -1,0 +1,37 @@
+version: '3.7'
+
+
+services:
+  db:
+    image: postgres:13.3
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data/
+    env_file: .env
+  redis:
+    restart: always
+    image: redis:6.2 # redis:7.0-rc3-bullseye
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+#    command: redis-server --save 20 1 --loglevel warning --requirepass JJk8iBHoFgLKtZ.zMQ!jz!T!@ozJ
+  web:
+    build:
+      context: .
+    command: >
+      sh -c "python manage.py migrate && gunicorn config.wsgi:application --workers 3 --timeout 90 --bind 0.0.0.0:8000"
+#             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes: 
+      - .:/usr/src/app
+    depends_on: 
+      - db
+      - redis
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
